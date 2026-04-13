@@ -1,11 +1,12 @@
 let soundVolume = 0.5;
 let audioContext = null;
-const DISCORD_ID = '851533046229762138';
+const DISCORD_ID = '505285489776001024';
 const GITHUB_USERNAME = 'Zari-16';
 const planets = ['🪐 Saturn', '🌍 Earth', '🔴 Mars', '🌙 Moon', '⭐ Andromeda', '🌌 Milky Way', '☄️ Asteroid Belt'];
-const tracks = [null, null, null];
+const tracks = [null, null];
 let perfProfile = { low: false };
 
+/* ─── Performance detection ─────────────────────────────── */
 function detectPerfProfile() {
     const reasons = [];
     try { if (navigator.connection && navigator.connection.saveData) reasons.push('save-data'); } catch {}
@@ -20,21 +21,29 @@ function detectPerfProfile() {
     return { low: reasons.length > 0 };
 }
 
+/* ─── Lazy video loader ─────────────────────────────────── */
 function ensureLazyVideoLoaded(video) {
     if (!video) return;
     const sources = video.querySelectorAll('source[data-src]');
     let changed = false;
-    sources.forEach(s => { if (!s.getAttribute('src')) { s.setAttribute('src', s.dataset.src || ''); changed = true; } });
-    if (changed) try { video.load(); } catch {}
+    sources.forEach(s => {
+        if (!s.getAttribute('src')) {
+            s.setAttribute('src', s.dataset.src || '');
+            changed = true;
+        }
+    });
+    if (changed) {
+        try { video.load(); } catch {}
+    }
 }
 
+/* ─── Init ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     perfProfile = detectPerfProfile();
     if (perfProfile.low) document.documentElement.dataset.perf = 'low';
 
     tracks[0] = document.getElementById('music1');
     tracks[1] = document.getElementById('music2');
-    tracks[2] = document.getElementById('music3');
 
     setupVolumeControl();
     setupMagicCursor();
@@ -47,13 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let lanyardTimer = null;
     let metaTimer = null;
+
     const startTimers = () => {
         if (!lanyardTimer) lanyardTimer = setInterval(fetchLanyardData, 30000);
-        if (!metaTimer) metaTimer = setInterval(refreshMetaStats, 600000);
+        if (!metaTimer)   metaTimer   = setInterval(refreshMetaStats, 600000);
     };
     const stopTimers = () => {
         clearInterval(lanyardTimer); lanyardTimer = null;
-        clearInterval(metaTimer); metaTimer = null;
+        clearInterval(metaTimer);   metaTimer   = null;
     };
 
     startTimers();
@@ -63,18 +73,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+/* ─── Audio context ─────────────────────────────────────── */
 function ensureAudioContext() {
     if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
     if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
 }
 
+/* ─── Swiper nav theme sync ─────────────────────────────── */
 function syncSwiperNavTheme(swiper) {
     const el = document.querySelector('.swiper-container');
-    if (el) el.dataset.navTheme = String((swiper.realIndex % 3) + 1);
+    if (el) el.dataset.navTheme = String((swiper.realIndex % 2) + 1);
 }
 
+/* ─── Video sync ────────────────────────────────────────── */
 function syncActiveSlideVideo(swiper) {
-    document.querySelectorAll('.slide-video').forEach(v => { try { v.pause(); } catch {} });
+    // Pause all videos first
+    document.querySelectorAll('.slide-video').forEach(v => {
+        try { v.pause(); } catch {}
+    });
+
     const activeSlide = swiper?.slides?.[swiper.activeIndex];
     const activeVideo = activeSlide?.querySelector('.slide-video');
     if (activeVideo) {
@@ -85,6 +102,7 @@ function syncActiveSlideVideo(swiper) {
     }
 }
 
+/* ─── Swiper init ───────────────────────────────────────── */
 function initSwiper() {
     const swiper = new Swiper('.swiper-container', {
         loop: !perfProfile.low,
@@ -96,14 +114,23 @@ function initSwiper() {
         keyboard: { enabled: true }
     });
 
+    // Force-load first slide video immediately on init
+    const firstSlide = swiper?.slides?.[swiper.activeIndex];
+    if (firstSlide) {
+        const firstVideo = firstSlide.querySelector('.slide-video');
+        if (firstVideo) ensureLazyVideoLoaded(firstVideo);
+    }
+
     syncSwiperNavTheme(swiper);
     syncActiveSlideVideo(swiper);
+
     swiper.on('slideChange', () => {
         syncSwiperNavTheme(swiper);
         switchTrack(swiper.realIndex);
         syncActiveSlideVideo(swiper);
     });
 
+    // Start music on first user interaction
     const startMusic = () => {
         switchTrack(swiper.realIndex);
         document.removeEventListener('click', startMusic);
@@ -113,22 +140,30 @@ function initSwiper() {
     document.addEventListener('keydown', startMusic);
 }
 
+/* ─── Track switching ───────────────────────────────────── */
 function switchTrack(index) {
     tracks.forEach((t, i) => {
         if (!t) return;
-        if (i === index) { t.volume = soundVolume; t.play().catch(() => {}); }
-        else { t.pause(); t.currentTime = 0; }
+        if (i === index) {
+            t.volume = soundVolume;
+            t.play().catch(() => {});
+        } else {
+            t.pause();
+            t.currentTime = 0;
+        }
     });
 }
 
+/* ─── Random location ───────────────────────────────────── */
 function setRandomLocation() {
     const loc = planets[Math.floor(Math.random() * planets.length)];
-    ['location', 'location2', 'location3'].forEach(id => {
+    ['location', 'location2'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = loc;
     });
 }
 
+/* ─── Lanyard presence ──────────────────────────────────── */
 function presenceFromLanyard(payload) {
     const d = payload.data;
     if (!d) return null;
@@ -154,22 +189,22 @@ function presenceFromLanyard(payload) {
 }
 
 function applyPresenceToSlides(presence) {
-    ['', '2', '3'].forEach(s => {
-        const row = document.getElementById(`presenceRow${s}`);
-        const art = document.getElementById(`presenceArt${s}`);
+    ['', '2'].forEach(s => {
+        const row   = document.getElementById(`presenceRow${s}`);
+        const art   = document.getElementById(`presenceArt${s}`);
         const label = document.getElementById(`presenceLabel${s}`);
-        const text = document.getElementById(`presenceText${s}`);
+        const text  = document.getElementById(`presenceText${s}`);
         if (!row || !label || !text) return;
         if (!presence) {
             row.hidden = true;
             if (art) { art.hidden = true; art.removeAttribute('src'); }
             label.textContent = '';
-            text.textContent = '';
+            text.textContent  = '';
             return;
         }
         row.hidden = false;
         label.textContent = presence.label;
-        text.textContent = presence.body;
+        text.textContent  = presence.body;
         if (art) {
             if (presence.art) { art.src = presence.art; art.hidden = false; }
             else { art.hidden = true; art.removeAttribute('src'); }
@@ -182,32 +217,38 @@ async function fetchLanyardData() {
         const data = await fetch(`https://api.lanyard.rest/v1/users/${DISCORD_ID}`).then(r => r.json());
         if (!data.success) { applyPresenceToSlides(null); return; }
 
-        const user = data.data.discord_user;
-        const status = data.data.discord_status;
-        const avatarUrl = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`;
+        const user    = data.data.discord_user;
+        const status  = data.data.discord_status;
+        const avatarUrl   = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`;
         const displayName = user.display_name || user.global_name;
+
         const statusMap = {
-            online: { text: 'Online', color: '#43b581' },
-            idle:   { text: 'Idle',   color: '#faa61a' },
-            dnd:    { text: 'Do Not Disturb', color: '#f04747' },
-            offline:{ text: 'Offline', color: '#747f8d' }
+            online:  { text: 'Online',          color: '#43b581' },
+            idle:    { text: 'Idle',             color: '#faa61a' },
+            dnd:     { text: 'Do Not Disturb',   color: '#f04747' },
+            offline: { text: 'Offline',          color: '#747f8d' }
         };
         const currentStatus = statusMap[status] || statusMap.offline;
 
         applyPresenceToSlides(presenceFromLanyard(data));
 
-        ['', '2', '3'].forEach(s => {
-            const get = id => document.getElementById(id + s);
-            const avatar = get('discordAvatar'), dtAvatar = get('dogtagAvatar');
-            const name = get('discordName'), dtName = get('dogtagName');
-            const dtUser = get('dogtagUsername'), dot = get('statusDot'), txt = get('statusText');
-            if (avatar)   avatar.src = avatarUrl;
-            if (dtAvatar) dtAvatar.src = avatarUrl;
-            if (name)     name.textContent = displayName;
-            if (dtName)   dtName.innerHTML = `${displayName} `;
-            if (dtUser)   dtUser.textContent = `@${user.username}`;
-            if (dot)      dot.style.color = currentStatus.color;
-            if (txt)      txt.textContent = currentStatus.text;
+        ['', '2'].forEach(s => {
+            const get   = id => document.getElementById(id + s);
+            const avatar  = get('discordAvatar');
+            const dtAvatar = get('dogtagAvatar');
+            const name    = get('discordName');
+            const dtName  = get('dogtagName');
+            const dtUser  = get('dogtagUsername');
+            const dot     = get('statusDot');
+            const txt     = get('statusText');
+
+            if (avatar)   avatar.src            = avatarUrl;
+            if (dtAvatar) dtAvatar.src           = avatarUrl;
+            if (name)     name.textContent       = displayName;
+            if (dtName)   dtName.innerHTML       = `${displayName} `;
+            if (dtUser)   dtUser.textContent     = `@${user.username}`;
+            if (dot)      dot.style.color        = currentStatus.color;
+            if (txt)      txt.textContent        = currentStatus.text;
         });
     } catch (e) {
         console.error('Lanyard fetch failed:', e);
@@ -215,6 +256,7 @@ async function fetchLanyardData() {
     }
 }
 
+/* ─── GitHub stats ──────────────────────────────────────── */
 async function fetchGitHubPublicProfile() {
     if (!GITHUB_USERNAME) return null;
     const res = await fetch(`https://api.github.com/users/${encodeURIComponent(GITHUB_USERNAME)}`);
@@ -225,11 +267,11 @@ async function fetchGitHubPublicProfile() {
 
 async function refreshMetaStats() {
     try {
-        const gh = await fetchGitHubPublicProfile();
+        const gh   = await fetchGitHubPublicProfile();
         const html = gh
             ? `<span class="badge rounded-pill bg-black bg-opacity-25 text-white border border-white border-opacity-10 px-3 py-2 fw-semibold meta-badge" title="GitHub @${GITHUB_USERNAME}"><i class="fab fa-github" aria-hidden="true"></i>${gh.followers} followers · ${gh.repos} repos</span>`
             : '';
-        ['metaStats', 'metaStats2', 'metaStats3'].forEach(id => {
+        ['metaStats', 'metaStats2'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = html;
         });
@@ -238,53 +280,62 @@ async function refreshMetaStats() {
     }
 }
 
+/* ─── Visitor counter ───────────────────────────────────── */
 function trackVisitor() {
     const visitors = (parseInt(localStorage.getItem('visitorCount') || '0') + 1);
     localStorage.setItem('visitorCount', visitors);
-    ['visitorCount', 'visitorCount2', 'visitorCount3'].forEach(id => {
+    ['visitorCount', 'visitorCount2'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = visitors;
     });
 }
 
+/* ─── Volume control ────────────────────────────────────── */
 function setupVolumeControl() {
-    const volumeBtn = document.getElementById('volumeBtn');
-    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeBtn     = document.getElementById('volumeBtn');
+    const volumeSlider  = document.getElementById('volumeSlider');
     const volumeControl = document.getElementById('volumeControl');
 
     volumeBtn.addEventListener('click', () => volumeSlider.classList.toggle('active'));
+
     volumeControl.addEventListener('input', e => {
         soundVolume = e.target.value / 100;
         const icon = document.querySelector('#volumeBtn .icon');
         icon.textContent = soundVolume === 0 ? '🔇' : soundVolume < 0.5 ? '🔉' : '🔊';
         tracks.forEach(t => { if (t) t.volume = soundVolume; });
     });
+
     document.addEventListener('click', e => {
         if (!volumeBtn.contains(e.target) && !volumeSlider.contains(e.target))
             volumeSlider.classList.remove('active');
     });
 }
 
+/* ─── Sound effects ─────────────────────────────────────── */
 function playSound(soundName) {
     if (soundVolume === 0) return;
     ensureAudioContext();
     const freq = soundName === 'hover' ? 800 : 600;
     const dur  = soundName === 'hover' ? 0.1  : 0.2;
-    const osc = audioContext.createOscillator();
+    const osc  = audioContext.createOscillator();
     const gain = audioContext.createGain();
-    osc.connect(gain); gain.connect(audioContext.destination);
-    osc.frequency.value = freq; osc.type = 'sine';
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.frequency.value = freq;
+    osc.type = 'sine';
     const t = audioContext.currentTime;
     gain.gain.setValueAtTime(0, t);
     gain.gain.linearRampToValueAtTime(soundVolume * 0.3, t + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.01, t + dur - 0.01);
-    osc.start(t); osc.stop(t + dur);
+    osc.start(t);
+    osc.stop(t + dur);
 }
 
+/* ─── Social link interactions ──────────────────────────── */
 function setupSocialLinks() {
     document.querySelectorAll('.social-link').forEach(link => {
         link.addEventListener('mouseenter', () => playSound('hover'));
-        link.addEventListener('click', () => playSound('click'));
+        link.addEventListener('click',      () => playSound('click'));
         link.addEventListener('mouseleave', () => {
             link.classList.add('shatter');
             setTimeout(() => link.classList.remove('shatter'), 500);
@@ -292,47 +343,60 @@ function setupSocialLinks() {
     });
 }
 
+/* ─── Magic cursor ──────────────────────────────────────── */
 function setupMagicCursor() {
     const canvas = document.getElementById('cursorCanvas');
     if (!canvas) return;
-    if (perfProfile.low || !window.matchMedia('(pointer: fine)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (
+        perfProfile.low ||
+        !window.matchMedia('(pointer: fine)').matches ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
         canvas.style.display = 'none';
         return;
     }
 
     const ctx = canvas.getContext('2d');
+
     const resize = () => {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        canvas.width = Math.floor(window.innerWidth * dpr);
+        canvas.width  = Math.floor(window.innerWidth  * dpr);
         canvas.height = Math.floor(window.innerHeight * dpr);
-        canvas.style.width = `${window.innerWidth}px`;
+        canvas.style.width  = `${window.innerWidth}px`;
         canvas.style.height = `${window.innerHeight}px`;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
+
     let resizeRaf = null;
     window.addEventListener('resize', () => {
         if (resizeRaf) return;
         resizeRaf = requestAnimationFrame(() => { resizeRaf = null; resize(); });
     }, { passive: true });
 
-    const stars = [];
+    const stars   = [];
     const MAX_STARS = 40;
 
     class Star {
         constructor(x, y) {
             this.x = x; this.y = y;
-            this.size = Math.random() * 2 + 1;
+            this.size   = Math.random() * 2 + 1;
             this.speedX = (Math.random() - 0.5) * 1.6;
             this.speedY = (Math.random() - 0.5) * 1.6;
-            this.life = 1;
-            this.decay = Math.random() * 0.05 + 0.02;
-            this.color = `hsl(${Math.random() * 60 + 180},100%,${Math.random() * 30 + 60}%)`;
+            this.life   = 1;
+            this.decay  = Math.random() * 0.05 + 0.02;
+            // Pastel purple/pink hues to match theme
+            this.color  = `hsl(${Math.random() * 60 + 270},80%,${Math.random() * 30 + 65}%)`;
         }
-        update() { this.x += this.speedX; this.y += this.speedY; this.life -= this.decay; this.size *= 0.97; }
+        update() {
+            this.x    += this.speedX;
+            this.y    += this.speedY;
+            this.life -= this.decay;
+            this.size *= 0.97;
+        }
         draw() {
             ctx.globalAlpha = this.life;
-            ctx.fillStyle = this.color;
+            ctx.fillStyle   = this.color;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
             ctx.fill();
@@ -356,7 +420,8 @@ function setupMagicCursor() {
     function animate() {
         ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         for (let i = stars.length - 1; i >= 0; i--) {
-            stars[i].update(); stars[i].draw();
+            stars[i].update();
+            stars[i].draw();
             if (stars[i].life <= 0) stars.splice(i, 1);
         }
         rafId = stars.length ? requestAnimationFrame(animate) : null;
