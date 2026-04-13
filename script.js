@@ -1,7 +1,7 @@
 let soundVolume = 0.5;
 let audioContext = null;
-const DISCORD_ID = '505285489776001024';
-const GITHUB_USERNAME = 'Deepeshgiri';
+const DISCORD_ID = '851533046229762138';
+const GITHUB_USERNAME = 'Zari-16';
 const planets = ['🪐 Saturn', '🌍 Earth', '🔴 Mars', '🌙 Moon', '⭐ Andromeda', '🌌 Milky Way', '☄️ Asteroid Belt'];
 const tracks = [null, null, null];
 let perfProfile = { low: false };
