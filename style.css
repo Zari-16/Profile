@@ -2,12 +2,12 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-    --c1: #00d4ff;
-    --c2: #ff00ff;
-    --accent: #00d4ff;
+    --c1: #c9a0ff;
+    --c2: #f0a8d0;
+    --accent: #c9a0ff;
     --card-bg: rgba(255,255,255,0.06);
-    --card-border: rgba(255,255,255,0.15);
-    --glow: rgba(0,212,255,0.35);
+    --card-border: rgba(201,160,255,0.2);
+    --glow: rgba(201,160,255,0.35);
     --safe-top: env(safe-area-inset-top);
     --safe-right: env(safe-area-inset-right);
     --safe-bottom: env(safe-area-inset-bottom);
@@ -153,18 +153,13 @@ body {
 
 /* ─── Swiper nav — theme via data-nav-theme on .swiper-container ─ */
 .swiper-container[data-nav-theme="2"] {
-    --nav-c1: #ff00c8;
-    --nav-c2: #ff6b00;
-    --nav-glow: rgba(255, 0, 200, 0.42);
-    --nav-surface: rgba(36, 0, 48, 0.55);
+    --nav-c1: #ff85a1;
+    --nav-c2: #a8d5a2;
+    --nav-glow: rgba(255, 133, 161, 0.42);
+    --nav-surface: rgba(40, 10, 20, 0.55);
 }
 
-.swiper-container[data-nav-theme="3"] {
-    --nav-c1: #00ff78;
-    --nav-c2: #00e5ff;
-    --nav-glow: rgba(0, 255, 120, 0.38);
-    --nav-surface: rgba(4, 28, 18, 0.55);
-}
+
 
 /* Mask SVGs: white = visible gradient. Sizes: btn = outer ring, arrow = btn / φ² (~38% of diameter) */
 .swiper-button-next,
@@ -906,35 +901,19 @@ body {
    THEME 2 — Synthwave
 ════════════════════════════════════════════════════════ */
 .theme-2 {
-    --c1: #ff00c8; --c2: #ff6b00;
-    --accent: #ff00c8;
-    --glow: rgba(255,0,200,0.35);
-    --card-border: rgba(255,0,200,0.25);
-    --card-bg: rgba(255,0,200,0.05);
+    --c1: #ff85a1;
+    --c2: #a8d5a2;
+    --accent: #ff85a1;
+    --glow: rgba(255,133,161,0.35);
+    --card-border: rgba(255,133,161,0.22);
+    --card-bg: rgba(255,133,161,0.05);
 }
-.theme-2 .avatar-img    { border-color: #ff00c8; }
-.theme-2 .dogtag-avatar { border-color: rgba(255,0,200,0.6); }
-.theme-2 .dogtag-name   { color: #ff00c8; }
-.theme-2 .dogtag-username { color: rgba(255,180,255,0.55); }
-.theme-2 .location      { color: rgba(255,180,255,0.65); }
-.theme-2 .visitor-badge { background: linear-gradient(135deg,#ff00c8,#ff6b00); }
-
-/* ════════════════════════════════════════════════════════
-   THEME 3 — Forest
-════════════════════════════════════════════════════════ */
-.theme-3 {
-    --c1: #00ff78; --c2: #00e5ff;
-    --accent: #00ff78;
-    --glow: rgba(0,255,120,0.3);
-    --card-border: rgba(0,255,120,0.22);
-    --card-bg: rgba(0,255,120,0.04);
-}
-.theme-3 .avatar-img    { border-color: #00ff78; }
-.theme-3 .dogtag-avatar { border-color: rgba(0,255,120,0.6); }
-.theme-3 .dogtag-name   { color: #00ff78; }
-.theme-3 .dogtag-username { color: rgba(150,255,180,0.55); }
-.theme-3 .location      { color: rgba(150,255,180,0.65); }
-.theme-3 .visitor-badge { background: linear-gradient(135deg,#00ff78,#00b894); color: #071410; }
+.theme-2 .avatar-img    { border-color: #ff85a1; }
+.theme-2 .dogtag-avatar { border-color: rgba(255,133,161,0.6); }
+.theme-2 .dogtag-name   { color: #ff85a1; }
+.theme-2 .dogtag-username { color: rgba(255,200,210,0.55); }
+.theme-2 .location      { color: rgba(255,200,210,0.65); }
+.theme-2 .visitor-badge { background: linear-gradient(135deg, #ff85a1, #a8d5a2); color: #1a0a0e; }
 
 /* ─── Touch devices ─────────────────────────────────────── */
 @media (hover: none) {
