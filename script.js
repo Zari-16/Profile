@@ -185,7 +185,10 @@ async function fetchLanyardData() {
 
         const user        = data.data.discord_user;
         const status      = data.data.discord_status;
-        const avatarUrl   = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`;
+        const format = user.avatar?.startsWith("a_") ? "gif" : "png";
+        const avatarUrl = user.avatar
+          ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${format}?size=256`
+          : `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator) % 5}.png`;
         const displayName = user.display_name || user.global_name;
         const statusMap   = {
             online:  { text: 'Online',        color: '#43b581' },
