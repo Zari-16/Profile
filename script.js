@@ -2,42 +2,29 @@ let soundVolume = 0.5;
 let audioContext = null;
 const DISCORD_ID = '505285489776001024';
 const GITHUB_USERNAME = 'Zari-16';
-const planets = ['🪐 Saturn', '🌍 Earth', '🔴 Mars', '🌙 Moon', '⭐ Andromeda', '🌌 Milky Way', '☄️ Asteroid Belt'];
+const planets = ['🪐 Saturn','🌍 Earth','🔴 Mars','🌙 Moon','⭐ Andromeda','🌌 Milky Way','☄️ Asteroid Belt'];
 const tracks = [null, null];
 let perfProfile = { low: false };
 
-/* ─── Performance detection ─────────────────────────────── */
 function detectPerfProfile() {
-    const reasons = [];
-    try { if (navigator.connection && navigator.connection.saveData) reasons.push('save-data'); } catch {}
-    try { const m = navigator.deviceMemory; if (m > 0 && m <= 4) reasons.push('low-memory'); } catch {}
-    try { const c = navigator.hardwareConcurrency; if (c > 0 && c <= 4) reasons.push('low-cores'); } catch {}
-    try { if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) reasons.push('reduced-motion'); } catch {}
-    try {
-        const coarse = window.matchMedia('(pointer: coarse)').matches;
-        const cores = navigator.hardwareConcurrency;
-        if (coarse && cores > 0 && cores <= 4) reasons.push('coarse-pointer');
-    } catch {}
-    return { low: reasons.length > 0 };
+    const r = [];
+    try { if (navigator.connection?.saveData) r.push('save-data'); } catch {}
+    try { const m = navigator.deviceMemory; if (m > 0 && m <= 4) r.push('low-mem'); } catch {}
+    try { const c = navigator.hardwareConcurrency; if (c > 0 && c <= 4) r.push('low-cores'); } catch {}
+    try { if (window.matchMedia('(prefers-reduced-motion:reduce)').matches) r.push('reduced'); } catch {}
+    try { if (window.matchMedia('(pointer:coarse)').matches && navigator.hardwareConcurrency <= 4) r.push('coarse'); } catch {}
+    return { low: r.length > 0 };
 }
 
-/* ─── Lazy video loader ─────────────────────────────────── */
 function ensureLazyVideoLoaded(video) {
     if (!video) return;
-    const sources = video.querySelectorAll('source[data-src]');
     let changed = false;
-    sources.forEach(s => {
-        if (!s.getAttribute('src')) {
-            s.setAttribute('src', s.dataset.src || '');
-            changed = true;
-        }
+    video.querySelectorAll('source[data-src]').forEach(s => {
+        if (!s.getAttribute('src')) { s.setAttribute('src', s.dataset.src || ''); changed = true; }
     });
-    if (changed) {
-        try { video.load(); } catch {}
-    }
+    if (changed) try { video.load(); } catch {}
 }
 
-/* ─── Init ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     perfProfile = detectPerfProfile();
     if (perfProfile.low) document.documentElement.dataset.perf = 'low';
@@ -54,55 +41,44 @@ document.addEventListener('DOMContentLoaded', () => {
     setRandomLocation();
     initSwiper();
 
-    let lanyardTimer = null;
-    let metaTimer = null;
-
-    const startTimers = () => {
+    let lanyardTimer = null, metaTimer = null;
+    const start = () => {
         if (!lanyardTimer) lanyardTimer = setInterval(fetchLanyardData, 30000);
         if (!metaTimer)   metaTimer   = setInterval(refreshMetaStats, 600000);
     };
-    const stopTimers = () => {
+    const stop = () => {
         clearInterval(lanyardTimer); lanyardTimer = null;
         clearInterval(metaTimer);   metaTimer   = null;
     };
-
-    startTimers();
+    start();
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden) stopTimers();
-        else { fetchLanyardData(); refreshMetaStats(); startTimers(); }
+        if (document.hidden) stop();
+        else { fetchLanyardData(); refreshMetaStats(); start(); }
     });
 });
 
-/* ─── Audio context ─────────────────────────────────────── */
 function ensureAudioContext() {
     if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
     if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
 }
 
-/* ─── Swiper nav theme sync ─────────────────────────────── */
-function syncSwiperNavTheme(swiper) {
+function syncNavTheme(swiper) {
     const el = document.querySelector('.swiper-container');
     if (el) el.dataset.navTheme = String((swiper.realIndex % 2) + 1);
 }
 
-/* ─── Video sync ────────────────────────────────────────── */
-function syncActiveSlideVideo(swiper) {
-    // Pause all videos first
-    document.querySelectorAll('.slide-video').forEach(v => {
-        try { v.pause(); } catch {}
-    });
-
-    const activeSlide = swiper?.slides?.[swiper.activeIndex];
-    const activeVideo = activeSlide?.querySelector('.slide-video');
-    if (activeVideo) {
-        ensureLazyVideoLoaded(activeVideo);
-        activeVideo.play().catch(() => {
-            document.addEventListener('click', () => activeVideo.play().catch(() => {}), { once: true });
+function syncVideo(swiper) {
+    document.querySelectorAll('.slide-video').forEach(v => { try { v.pause(); } catch {} });
+    const slide = swiper?.slides?.[swiper.activeIndex];
+    const vid   = slide?.querySelector('.slide-video');
+    if (vid) {
+        ensureLazyVideoLoaded(vid);
+        vid.play().catch(() => {
+            document.addEventListener('click', () => vid.play().catch(() => {}), { once: true });
         });
     }
 }
 
-/* ─── Swiper init ───────────────────────────────────────── */
 function initSwiper() {
     const swiper = new Swiper('.swiper-container', {
         loop: !perfProfile.low,
@@ -114,47 +90,39 @@ function initSwiper() {
         keyboard: { enabled: true }
     });
 
-    // Force-load first slide video immediately on init
+    // Force-load first slide video immediately
     const firstSlide = swiper?.slides?.[swiper.activeIndex];
     if (firstSlide) {
-        const firstVideo = firstSlide.querySelector('.slide-video');
-        if (firstVideo) ensureLazyVideoLoaded(firstVideo);
+        const v = firstSlide.querySelector('.slide-video');
+        if (v) ensureLazyVideoLoaded(v);
     }
 
-    syncSwiperNavTheme(swiper);
-    syncActiveSlideVideo(swiper);
+    syncNavTheme(swiper);
+    syncVideo(swiper);
 
     swiper.on('slideChange', () => {
-        syncSwiperNavTheme(swiper);
+        syncNavTheme(swiper);
         switchTrack(swiper.realIndex);
-        syncActiveSlideVideo(swiper);
+        syncVideo(swiper);
     });
 
-    // Start music on first user interaction
     const startMusic = () => {
         switchTrack(swiper.realIndex);
-        document.removeEventListener('click', startMusic);
+        document.removeEventListener('click',   startMusic);
         document.removeEventListener('keydown', startMusic);
     };
-    document.addEventListener('click', startMusic);
+    document.addEventListener('click',   startMusic);
     document.addEventListener('keydown', startMusic);
 }
 
-/* ─── Track switching ───────────────────────────────────── */
 function switchTrack(index) {
     tracks.forEach((t, i) => {
         if (!t) return;
-        if (i === index) {
-            t.volume = soundVolume;
-            t.play().catch(() => {});
-        } else {
-            t.pause();
-            t.currentTime = 0;
-        }
+        if (i === index) { t.volume = soundVolume; t.play().catch(() => {}); }
+        else { t.pause(); t.currentTime = 0; }
     });
 }
 
-/* ─── Random location ───────────────────────────────────── */
 function setRandomLocation() {
     const loc = planets[Math.floor(Math.random() * planets.length)];
     ['location', 'location2'].forEach(id => {
@@ -163,7 +131,6 @@ function setRandomLocation() {
     });
 }
 
-/* ─── Lanyard presence ──────────────────────────────────── */
 function presenceFromLanyard(payload) {
     const d = payload.data;
     if (!d) return null;
@@ -176,7 +143,7 @@ function presenceFromLanyard(payload) {
     if (playing) {
         let body = playing.name;
         if (playing.details) body += ` — ${playing.details}`;
-        if (playing.state) body += ` · ${playing.state}`;
+        if (playing.state)   body += ` · ${playing.state}`;
         return { label: 'In game', body, art: null };
     }
     const watching = acts.find(a => a.type === 3 && a.name);
@@ -188,7 +155,7 @@ function presenceFromLanyard(payload) {
     return null;
 }
 
-function applyPresenceToSlides(presence) {
+function applyPresence(presence) {
     ['', '2'].forEach(s => {
         const row   = document.getElementById(`presenceRow${s}`);
         const art   = document.getElementById(`presenceArt${s}`);
@@ -198,8 +165,7 @@ function applyPresenceToSlides(presence) {
         if (!presence) {
             row.hidden = true;
             if (art) { art.hidden = true; art.removeAttribute('src'); }
-            label.textContent = '';
-            text.textContent  = '';
+            label.textContent = ''; text.textContent = '';
             return;
         }
         row.hidden = false;
@@ -215,49 +181,42 @@ function applyPresenceToSlides(presence) {
 async function fetchLanyardData() {
     try {
         const data = await fetch(`https://api.lanyard.rest/v1/users/${DISCORD_ID}`).then(r => r.json());
-        if (!data.success) { applyPresenceToSlides(null); return; }
+        if (!data.success) { applyPresence(null); return; }
 
-        const user    = data.data.discord_user;
-        const status  = data.data.discord_status;
+        const user        = data.data.discord_user;
+        const status      = data.data.discord_status;
         const avatarUrl   = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`;
         const displayName = user.display_name || user.global_name;
-
-        const statusMap = {
-            online:  { text: 'Online',          color: '#43b581' },
-            idle:    { text: 'Idle',             color: '#faa61a' },
-            dnd:     { text: 'Do Not Disturb',   color: '#f04747' },
-            offline: { text: 'Offline',          color: '#747f8d' }
+        const statusMap   = {
+            online:  { text: 'Online',        color: '#43b581' },
+            idle:    { text: 'Idle',           color: '#faa61a' },
+            dnd:     { text: 'Do Not Disturb', color: '#f04747' },
+            offline: { text: 'Offline',        color: '#747f8d' }
         };
-        const currentStatus = statusMap[status] || statusMap.offline;
+        const cs = statusMap[status] || statusMap.offline;
 
-        applyPresenceToSlides(presenceFromLanyard(data));
+        applyPresence(presenceFromLanyard(data));
 
         ['', '2'].forEach(s => {
-            const get   = id => document.getElementById(id + s);
-            const avatar  = get('discordAvatar');
-            const dtAvatar = get('dogtagAvatar');
-            const name    = get('discordName');
-            const dtName  = get('dogtagName');
-            const dtUser  = get('dogtagUsername');
-            const dot     = get('statusDot');
-            const txt     = get('statusText');
-
-            if (avatar)   avatar.src            = avatarUrl;
-            if (dtAvatar) dtAvatar.src           = avatarUrl;
-            if (name)     name.textContent       = displayName;
-            if (dtName)   dtName.innerHTML       = `${displayName} `;
-            if (dtUser)   dtUser.textContent     = `@${user.username}`;
-            if (dot)      dot.style.color        = currentStatus.color;
-            if (txt)      txt.textContent        = currentStatus.text;
+            const g = id => document.getElementById(id + s);
+            const avatar = g('discordAvatar'), dtAvatar = g('dogtagAvatar');
+            const name   = g('discordName'),   dtName   = g('dogtagName');
+            const dtUser = g('dogtagUsername'),dot      = g('statusDot'), txt = g('statusText');
+            if (avatar)   avatar.src        = avatarUrl;
+            if (dtAvatar) dtAvatar.src      = avatarUrl;
+            if (name)     name.textContent  = displayName;
+            if (dtName)   dtName.innerHTML  = `${displayName} `;
+            if (dtUser)   dtUser.textContent= `@${user.username}`;
+            if (dot)      dot.style.color   = cs.color;
+            if (txt)      txt.textContent   = cs.text;
         });
     } catch (e) {
         console.error('Lanyard fetch failed:', e);
-        applyPresenceToSlides(null);
+        applyPresence(null);
     }
 }
 
-/* ─── GitHub stats ──────────────────────────────────────── */
-async function fetchGitHubPublicProfile() {
+async function fetchGitHub() {
     if (!GITHUB_USERNAME) return null;
     const res = await fetch(`https://api.github.com/users/${encodeURIComponent(GITHUB_USERNAME)}`);
     if (!res.ok) return null;
@@ -267,7 +226,7 @@ async function fetchGitHubPublicProfile() {
 
 async function refreshMetaStats() {
     try {
-        const gh   = await fetchGitHubPublicProfile();
+        const gh   = await fetchGitHub();
         const html = gh
             ? `<span class="badge rounded-pill bg-black bg-opacity-25 text-white border border-white border-opacity-10 px-3 py-2 fw-semibold meta-badge" title="GitHub @${GITHUB_USERNAME}"><i class="fab fa-github" aria-hidden="true"></i>${gh.followers} followers · ${gh.repos} repos</span>`
             : '';
@@ -275,63 +234,50 @@ async function refreshMetaStats() {
             const el = document.getElementById(id);
             if (el) el.innerHTML = html;
         });
-    } catch (e) {
-        console.warn('GitHub fetch failed:', e);
-    }
+    } catch (e) { console.warn('GitHub fetch failed:', e); }
 }
 
-/* ─── Visitor counter ───────────────────────────────────── */
 function trackVisitor() {
-    const visitors = (parseInt(localStorage.getItem('visitorCount') || '0') + 1);
-    localStorage.setItem('visitorCount', visitors);
+    const v = (parseInt(localStorage.getItem('visitorCount') || '0') + 1);
+    localStorage.setItem('visitorCount', v);
     ['visitorCount', 'visitorCount2'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.textContent = visitors;
+        if (el) el.textContent = v;
     });
 }
 
-/* ─── Volume control ────────────────────────────────────── */
 function setupVolumeControl() {
-    const volumeBtn     = document.getElementById('volumeBtn');
-    const volumeSlider  = document.getElementById('volumeSlider');
-    const volumeControl = document.getElementById('volumeControl');
-
-    volumeBtn.addEventListener('click', () => volumeSlider.classList.toggle('active'));
-
-    volumeControl.addEventListener('input', e => {
+    const btn   = document.getElementById('volumeBtn');
+    const panel = document.getElementById('volumeSlider');
+    const ctrl  = document.getElementById('volumeControl');
+    btn.addEventListener('click', () => panel.classList.toggle('active'));
+    ctrl.addEventListener('input', e => {
         soundVolume = e.target.value / 100;
         const icon = document.querySelector('#volumeBtn .icon');
         icon.textContent = soundVolume === 0 ? '🔇' : soundVolume < 0.5 ? '🔉' : '🔊';
         tracks.forEach(t => { if (t) t.volume = soundVolume; });
     });
-
     document.addEventListener('click', e => {
-        if (!volumeBtn.contains(e.target) && !volumeSlider.contains(e.target))
-            volumeSlider.classList.remove('active');
+        if (!btn.contains(e.target) && !panel.contains(e.target)) panel.classList.remove('active');
     });
 }
 
-/* ─── Sound effects ─────────────────────────────────────── */
-function playSound(soundName) {
+function playSound(name) {
     if (soundVolume === 0) return;
     ensureAudioContext();
-    const freq = soundName === 'hover' ? 800 : 600;
-    const dur  = soundName === 'hover' ? 0.1  : 0.2;
+    const freq = name === 'hover' ? 800 : 600;
+    const dur  = name === 'hover' ? 0.1  : 0.2;
     const osc  = audioContext.createOscillator();
     const gain = audioContext.createGain();
-    osc.connect(gain);
-    gain.connect(audioContext.destination);
-    osc.frequency.value = freq;
-    osc.type = 'sine';
+    osc.connect(gain); gain.connect(audioContext.destination);
+    osc.frequency.value = freq; osc.type = 'sine';
     const t = audioContext.currentTime;
     gain.gain.setValueAtTime(0, t);
     gain.gain.linearRampToValueAtTime(soundVolume * 0.3, t + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.01, t + dur - 0.01);
-    osc.start(t);
-    osc.stop(t + dur);
+    osc.start(t); osc.stop(t + dur);
 }
 
-/* ─── Social link interactions ──────────────────────────── */
 function setupSocialLinks() {
     document.querySelectorAll('.social-link').forEach(link => {
         link.addEventListener('mouseenter', () => playSound('hover'));
@@ -343,21 +289,13 @@ function setupSocialLinks() {
     });
 }
 
-/* ─── Magic cursor ──────────────────────────────────────── */
 function setupMagicCursor() {
     const canvas = document.getElementById('cursorCanvas');
     if (!canvas) return;
-    if (
-        perfProfile.low ||
-        !window.matchMedia('(pointer: fine)').matches ||
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    ) {
-        canvas.style.display = 'none';
-        return;
+    if (perfProfile.low || !window.matchMedia('(pointer:fine)').matches || window.matchMedia('(prefers-reduced-motion:reduce)').matches) {
+        canvas.style.display = 'none'; return;
     }
-
     const ctx = canvas.getContext('2d');
-
     const resize = () => {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         canvas.width  = Math.floor(window.innerWidth  * dpr);
@@ -367,16 +305,13 @@ function setupMagicCursor() {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
-
     let resizeRaf = null;
     window.addEventListener('resize', () => {
         if (resizeRaf) return;
         resizeRaf = requestAnimationFrame(() => { resizeRaf = null; resize(); });
     }, { passive: true });
 
-    const stars   = [];
-    const MAX_STARS = 40;
-
+    const stars = [];
     class Star {
         constructor(x, y) {
             this.x = x; this.y = y;
@@ -385,34 +320,21 @@ function setupMagicCursor() {
             this.speedY = (Math.random() - 0.5) * 1.6;
             this.life   = 1;
             this.decay  = Math.random() * 0.05 + 0.02;
-            // Pastel purple/pink hues to match theme
             this.color  = `hsl(${Math.random() * 60 + 270},80%,${Math.random() * 30 + 65}%)`;
         }
-        update() {
-            this.x    += this.speedX;
-            this.y    += this.speedY;
-            this.life -= this.decay;
-            this.size *= 0.97;
-        }
-        draw() {
-            ctx.globalAlpha = this.life;
-            ctx.fillStyle   = this.color;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fill();
-        }
+        update() { this.x += this.speedX; this.y += this.speedY; this.life -= this.decay; this.size *= 0.97; }
+        draw() { ctx.globalAlpha = this.life; ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
     }
 
-    let rafId = null, pointerRaf = null, lastPointer = null;
-
+    let rafId = null, pRaf = null, last = null;
     document.addEventListener('pointermove', e => {
-        lastPointer = { x: e.clientX, y: e.clientY };
-        if (pointerRaf) return;
-        pointerRaf = requestAnimationFrame(() => {
-            pointerRaf = null;
-            if (!lastPointer) return;
-            stars.push(new Star(lastPointer.x, lastPointer.y));
-            if (stars.length > MAX_STARS) stars.shift();
+        last = { x: e.clientX, y: e.clientY };
+        if (pRaf) return;
+        pRaf = requestAnimationFrame(() => {
+            pRaf = null;
+            if (!last) return;
+            stars.push(new Star(last.x, last.y));
+            if (stars.length > 40) stars.shift();
             if (!rafId) animate();
         });
     }, { passive: true });
@@ -420,13 +342,11 @@ function setupMagicCursor() {
     function animate() {
         ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         for (let i = stars.length - 1; i >= 0; i--) {
-            stars[i].update();
-            stars[i].draw();
+            stars[i].update(); stars[i].draw();
             if (stars[i].life <= 0) stars.splice(i, 1);
         }
         rafId = stars.length ? requestAnimationFrame(animate) : null;
     }
-
     document.addEventListener('visibilitychange', () => {
         if (document.hidden && rafId) { cancelAnimationFrame(rafId); rafId = null; }
         else if (!document.hidden && stars.length && !rafId) animate();
