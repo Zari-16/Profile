@@ -6,7 +6,7 @@
     --c2: #f0a8d0;
     --accent: #c9a0ff;
     --card-bg: rgba(255,255,255,0.06);
-    --card-border: rgba(201,160,255,0.2);
+    --card-border: rgba(255,255,255,0.15);
     --glow: rgba(201,160,255,0.35);
     --safe-top: env(safe-area-inset-top);
     --safe-right: env(safe-area-inset-right);
