@@ -10,193 +10,420 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
-    <link rel="stylesheet" href="styles.css">
+
+    <style>
+    /* ═══════════════════════════════════════════════════════
+       NUCLEAR RESET — nothing scrolls, nothing is white
+    ═══════════════════════════════════════════════════════ */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    html {
+        width:100vw; height:100vh;
+        overflow:hidden !important;
+        background:#050510;
+    }
+    body {
+        font-family:'Outfit',sans-serif;
+        width:100vw; height:100vh;
+        overflow:hidden !important;
+        background:#050510;
+        color:#fff;
+        -webkit-font-smoothing:antialiased;
+        margin:0 !important; padding:0 !important;
+    }
+
+    :root {
+        --c1:#c9a0ff; --c2:#f0a8d0;
+        --accent:#c9a0ff;
+        --glow:rgba(201,160,255,0.35);
+        --card-border:rgba(201,160,255,0.22);
+        --safe-top:env(safe-area-inset-top,0px);
+        --safe-right:env(safe-area-inset-right,0px);
+        --safe-bottom:env(safe-area-inset-bottom,0px);
+        --safe-left:env(safe-area-inset-left,0px);
+    }
+
+    /* ── cursor canvas ── */
+    #cursorCanvas { position:fixed;inset:0;pointer-events:none;z-index:9999; }
+
+    /* ── volume ── */
+    .media-controls { position:fixed;top:calc(var(--safe-top) + 18px);left:calc(var(--safe-left) + 18px);z-index:600; }
+    .control-btn {
+        width:46px;height:46px;background:rgba(5,5,20,0.7);
+        border:1px solid rgba(255,255,255,0.18);border-radius:50%;
+        display:flex;align-items:center;justify-content:center;
+        cursor:pointer;font-size:1.15rem;
+        transition:transform .25s,box-shadow .25s;color:#fff;
+    }
+    .control-btn:hover{transform:scale(1.1);box-shadow:0 0 20px var(--glow);}
+    .control-btn .icon{pointer-events:none;}
+    .volume-slider {
+        position:fixed;top:calc(var(--safe-top) + 74px);left:calc(var(--safe-left) + 18px);
+        background:rgba(5,5,20,0.9);border:1px solid rgba(255,255,255,0.12);
+        border-radius:12px;padding:12px 16px;
+        opacity:0;transform:translateY(-8px);
+        transition:opacity .25s,transform .25s;pointer-events:none;z-index:600;
+    }
+    .volume-slider.active{opacity:1;transform:none;pointer-events:all;}
+    .volume-slider input[type=range]{width:130px;cursor:pointer;accent-color:var(--accent);}
+
+    /* ═══════════════════════════════════════════════════════
+       SWIPER — always fills 100% viewport
+    ═══════════════════════════════════════════════════════ */
+    .swiper-container {
+        position:fixed !important;
+        top:0 !important; left:0 !important; right:0 !important; bottom:0 !important;
+        width:100vw !important; height:100vh !important;
+        z-index:1;
+        --nav-c1:#c9a0ff; --nav-c2:#f0a8d0;
+        --nav-glow:rgba(201,160,255,0.45);
+        --nav-surface:rgba(12,6,24,0.7);
+    }
+    .swiper-wrapper { width:100%;height:100%; }
+    .swiper-slide {
+        position:relative;width:100%;height:100%;
+        display:flex;align-items:center;justify-content:center;
+        overflow:hidden;background:#050510;
+    }
+    /* grain */
+    .swiper-slide::after {
+        content:'';position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0.04;
+        background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .slide-video { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none; }
+    .slide-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.38);z-index:2;pointer-events:none; }
+
+    /* theme label */
+    .theme-label {
+        position:absolute;top:calc(var(--safe-top) + 14px);right:calc(var(--safe-right) + 14px);
+        z-index:10;font-size:0.65rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+        padding:4px 14px;border-radius:20px;border:1px solid var(--card-border);
+        background:rgba(0,0,0,0.6);color:var(--accent);pointer-events:none;
+        animation:themeLabelGlow 4.5s ease-in-out infinite;
+    }
+
+    /* nav theme 2 */
+    .swiper-container[data-nav-theme="2"] {
+        --nav-c1:#ff85a1; --nav-c2:#a8d5a2;
+        --nav-glow:rgba(255,133,161,0.42);
+        --nav-surface:rgba(30,8,16,0.7);
+    }
+
+    /* nav arrows */
+    .swiper-button-next,.swiper-button-prev {
+        --nb:32px; --na:calc(32px / 2.618);
+        --nmn:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9.29 6.71a1 1 0 000 1.41L13.17 12l-3.88 3.88a1 1 0 101.42 1.42l4.59-4.59a1 1 0 000-1.42l-4.59-4.58a1 1 0 00-1.41 0z'/%3E%3C/svg%3E");
+        --nmp:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M14.71 6.71a1 1 0 010 1.41L10.83 12l3.88 3.88a1 1 0 11-1.42 1.42l-4.59-4.59a1 1 0 010-1.42l4.59-4.58a1 1 0 011.41 0z'/%3E%3C/svg%3E");
+        width:var(--nb) !important;height:var(--nb) !important;
+        margin-top:0 !important;top:50% !important;
+        color:transparent !important;z-index:20;border-radius:50%;
+        background:var(--nav-surface) !important;
+        border:1px solid rgba(255,255,255,0.14);
+        box-shadow:0 0 0 1px rgba(255,255,255,.05),0 6px 22px rgba(0,0,0,.5),0 0 18px var(--nav-glow);
+        transition:border-color .3s,box-shadow .3s,transform .25s;
+    }
+    .swiper-button-next::after,.swiper-button-prev::after {
+        content:'' !important;position:absolute;left:50%;top:50%;
+        width:var(--na);height:var(--na);transform:translate(-50%,-50%);
+        display:block !important;font-size:0 !important;
+        background:linear-gradient(125deg,var(--nav-c2) 0%,var(--nav-c1) 25%,#fff 45%,var(--nav-c1) 55%,#fff 65%,var(--nav-c2) 85%,var(--nav-c1) 100%);
+        background-size:300% 300%;background-position:0% 50%;
+        animation:navGlitter 2.4s ease-in-out infinite;
+    }
+    .swiper-button-next::after{-webkit-mask:var(--nmn) center/contain no-repeat;mask:var(--nmn) center/contain no-repeat;}
+    .swiper-button-prev::after{-webkit-mask:var(--nmp) center/contain no-repeat;mask:var(--nmp) center/contain no-repeat;}
+    .swiper-button-prev{left:calc(var(--safe-left) + 12px) !important;right:auto !important;transform:translateY(-50%);}
+    .swiper-button-next{right:calc(var(--safe-right) + 12px) !important;left:auto !important;transform:translateY(-50%);}
+    .swiper-button-prev:active{transform:translateY(-50%) scale(.9);}
+    .swiper-button-next:active{transform:translateY(-50%) scale(.9);}
+    .swiper-button-next:hover,.swiper-button-prev:hover{border-color:var(--nav-c1);box-shadow:0 0 26px var(--nav-glow);}
+
+    .swiper-pagination{z-index:20;bottom:calc(var(--safe-bottom) + 18px) !important;}
+    .swiper-pagination-bullet{width:8px !important;height:8px !important;background:rgba(255,255,255,.35) !important;opacity:1 !important;}
+    .swiper-pagination-bullet-active{width:22px !important;border-radius:6px !important;background:linear-gradient(90deg,var(--nav-c1),var(--nav-c2)) !important;box-shadow:0 0 14px var(--nav-glow) !important;}
+
+    /* ═══════════════════════════════════════════════════════
+       CARD
+    ═══════════════════════════════════════════════════════ */
+    .cap-container {
+        position:absolute;top:50%;left:50%;
+        transform:translate(-50%,-50%);
+        z-index:5;width:min(460px,92vw);
+        display:flex;flex-direction:column;align-items:stretch;
+        max-height:calc(100vh - 80px);
+    }
+    .slide-glass-shell {
+        position:relative;width:100%;
+        display:flex;flex-direction:column;align-items:center;
+        gap:clamp(8px,1.8vh,13px);
+        padding:clamp(20px,4vw,28px) clamp(16px,3.5vw,22px) clamp(22px,4.5vw,30px);
+        border-radius:clamp(22px,5vw,32px);
+        border:1px solid var(--card-border);
+        background:rgba(8,6,20,0.78);
+        box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 14px var(--glow),inset 0 1px 0 rgba(255,255,255,.08);
+        overflow:visible;isolation:isolate;
+        backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    }
+
+    /* animated border */
+    .glass-border-travel{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;}
+    .glass-border-travel--shell{z-index:2;} .glass-border-travel--dogtag{z-index:1;}
+    .glass-border-travel__trail{fill:none;stroke:var(--accent);stroke-width:9;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;stroke-dasharray:26 74;stroke-dashoffset:0;opacity:.5;animation:bst 5.2s linear infinite -0.55s;}
+    .glass-border-travel__trail--shell{stroke-width:10;stroke-dasharray:28 72;}
+    .glass-border-travel__trail--dogtag{stroke-width:7;stroke-dasharray:22 78;animation-duration:4.25s;animation-direction:reverse;animation-delay:-0.42s;}
+    .glass-border-travel__glowline{fill:none;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;stroke-dasharray:11 89;stroke-dashoffset:0;animation:bst 5.2s linear infinite -0.22s;}
+    .glass-border-travel__glowline--dogtag{stroke-width:3.75;stroke-dasharray:9 91;animation-duration:4.25s;animation-direction:reverse;animation-delay:-0.18s;}
+    .glass-border-travel__stroke{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;stroke-dasharray:2.8 97.2;stroke-dashoffset:0;animation:bst 5.2s linear infinite,bsparkle 1.65s ease-in-out infinite;}
+    .glass-border-travel__stroke--shell{stroke-width:2.6;stroke-dasharray:2.5 97.5;}
+    .glass-border-travel__stroke--dogtag{stroke-width:2.2;stroke-dasharray:2.4 97.6;animation:bst 4.25s linear infinite reverse,bsparkle 1.45s ease-in-out infinite reverse;}
+    @keyframes bst{to{stroke-dashoffset:-100;}}
+    @keyframes bsparkle{0%,100%{stroke-opacity:1}35%{stroke-opacity:.72}55%{stroke-opacity:.95}}
+
+    .slide-glass-shell::after{content:'';position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.045);pointer-events:none;z-index:0;}
+    .slide-glass-shell .avatar-section,.slide-glass-shell .presence-row,.slide-glass-shell .meta-stats,.slide-glass-shell .social-links{position:relative;z-index:3;width:100%;}
+    .slide-glass-shell .social-links{margin-top:clamp(4px,1vh,10px);justify-content:center;}
+
+    /* avatar */
+    .avatar-section{text-align:center;}
+    .avatar-decoration{position:relative;width:clamp(100px,20vw,148px);height:clamp(100px,20vw,148px);margin:0 auto clamp(8px,1.5vh,14px);}
+    .avatar-decoration::after{content:'';position:absolute;inset:-4px;border-radius:50%;z-index:0;animation:spin 4s linear infinite;box-shadow:0 0 0 2px var(--c1),0 0 10px var(--c1),0 0 20px var(--c2),inset 0 0 8px var(--c1);}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .decoration-frame{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;animation:floatY 3s ease-in-out infinite;}
+    .avatar-img{position:absolute;width:70%;height:70%;top:15%;left:15%;border-radius:50%;z-index:2;border:3px solid var(--accent);box-shadow:0 0 20px var(--glow),0 0 40px rgba(0,0,0,.5);object-fit:cover;}
+    .profile-name{font-size:clamp(1.4rem,5vw,2rem);font-weight:800;background:linear-gradient(120deg,var(--c1),var(--c2),var(--c1));background-size:220% auto;background-position:0% 50%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;cursor:pointer;transition:filter .3s;animation:nameShift 9s ease-in-out infinite;}
+    .profile-name:hover{filter:drop-shadow(0 0 10px var(--accent));}
+    .location{font-size:clamp(.8rem,2.5vw,.93rem);color:rgba(255,255,255,.62);margin-top:4px;}
+
+    /* presence */
+    .presence-row{display:flex;align-items:center;gap:10px;margin:8px auto 0;padding:10px 14px;width:100%;max-width:min(400px,100%);background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.09);border-radius:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06);}
+    .presence-row[hidden]{display:none !important;}
+    .presence-art{width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.12);}
+    .presence-art[hidden]{display:none;}
+    .presence-inner{min-width:0;text-align:left;}
+    .presence-label{display:block;font-size:.6rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:3px;}
+    .presence-text{font-size:clamp(.74rem,2.2vw,.87rem);font-weight:500;color:rgba(255,255,255,.92);line-height:1.38;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+    /* meta */
+    .meta-stats{margin-top:8px;max-width:min(420px,100%);min-height:1.4em;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;}
+    .meta-stats:empty{display:none;}
+    .meta-badge{font-size:clamp(.64rem,1.8vw,.77rem);}
+    .meta-badge i{margin-right:5px;opacity:.9;}
+
+    /* dogtag */
+    .dogtag-card.slide-glass-dogtag{width:calc(100% - 6px);align-self:center;margin-top:clamp(-16px,-2.8vw,-8px);z-index:3;padding:clamp(14px,3vw,20px) clamp(12px,2.8vw,18px);border-radius:clamp(16px,3.8vw,22px);border:1px solid rgba(255,255,255,.1);background:rgba(6,4,16,.78);box-shadow:0 8px 24px rgba(0,0,0,.5);position:relative;overflow:visible;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+    .visitor-badge{position:absolute;top:14px;right:14px;z-index:4;background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;padding:3px 12px;border-radius:20px;font-weight:700;font-size:clamp(.63rem,1.8vw,.79rem);box-shadow:0 4px 14px var(--glow);animation:vpop 2.8s ease-in-out .5s infinite;}
+    .visitor-badge::before{content:'👁 ';}
+    .dogtag-content{display:flex;gap:clamp(12px,3vw,20px);align-items:center;margin-top:6px;position:relative;z-index:2;}
+    .dogtag-avatar{width:clamp(50px,11vw,70px);height:clamp(50px,11vw,70px);border-radius:50%;border:2px solid var(--accent);overflow:hidden;flex-shrink:0;box-shadow:0 0 14px var(--glow);}
+    .dogtag-avatar img{width:100%;height:100%;object-fit:cover;}
+    .dogtag-info{flex:1;min-width:0;}
+    .dogtag-name{font-size:clamp(.92rem,3.2vw,1.18rem);font-weight:700;color:var(--accent);margin-bottom:3px;cursor:pointer;transition:text-shadow .3s;line-height:1.35;}
+    .dogtag-name:hover{text-shadow:0 0 12px var(--accent);}
+    .dogtag-name small{font-size:.8em;font-weight:500;opacity:.8;}
+    .dogtag-username{font-size:clamp(.7rem,2vw,.86rem);color:rgba(255,255,255,.48);margin-bottom:7px;}
+    .dogtag-status{display:flex;align-items:center;gap:6px;}
+    .status-dot{font-size:.9rem;animation:blink 1.5s ease-in-out infinite;}
+    .status-text{font-size:clamp(.7rem,2vw,.86rem);font-weight:600;color:rgba(255,255,255,.75);}
+
+    /* social */
+    .social-links{display:flex;justify-content:center;gap:clamp(8px,2.5vw,14px);flex-wrap:wrap;width:100%;}
+    .social-link{width:clamp(42px,10vw,52px);height:clamp(42px,10vw,52px);display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.07);border-radius:50%;border:1px solid rgba(255,255,255,.14);text-decoration:none;transition:transform .25s,box-shadow .25s,border-color .25s,background .25s;position:relative;-webkit-tap-highlight-color:transparent;}
+    .social-link i{font-size:clamp(16px,4vw,22px);transition:transform .25s;}
+    .social-link[data-name="Instagram"] i{color:#E4405F;}
+    .social-link[data-name="LinkedIn"]  i{color:#0A66C2;}
+    .social-link[data-name="GitHub"]    i{color:#ddd;}
+    .social-link::before{content:attr(data-name);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) scale(0);background:rgba(0,0,0,.92);color:#fff;padding:4px 10px;border-radius:7px;font-size:.7rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;border:1px solid rgba(255,255,255,.15);}
+    .social-link:hover{transform:translateY(-5px) scale(1.12);border-color:var(--accent);background:rgba(255,255,255,.12);box-shadow:0 10px 28px var(--glow);}
+    .social-link:hover i{transform:scale(1.15);}
+    .social-link:hover::before{opacity:1;transform:translateX(-50%) scale(1);}
+    .social-link.shatter::before{animation:shatterFade .5s ease forwards;}
+
+    /* keyframes */
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+    @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes vpop{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+    @keyframes shatterFade{0%{opacity:1;transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.2) rotate(8deg);opacity:.5}100%{opacity:0;transform:translateX(-50%) scale(.4) rotate(20deg)}}
+    @keyframes nameShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+    @keyframes themeLabelGlow{0%,100%{box-shadow:none;opacity:1}50%{box-shadow:0 0 28px var(--glow);opacity:.9}}
+    @keyframes navGlitter{0%,100%{background-position:8% 50%;filter:drop-shadow(0 0 2px var(--nav-glow))}35%{background-position:92% 50%;filter:drop-shadow(0 0 7px rgba(255,255,255,.6)) brightness(1.2)}}
+    @keyframes panelAmbient{0%,100%{box-shadow:0 10px 40px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06),inset 0 1px 0 rgba(255,255,255,.12),0 0 0 transparent;}50%{box-shadow:0 14px 52px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.09),inset 0 1px 0 rgba(255,255,255,.16),0 0 32px var(--glow);}}
+    @keyframes dogAmbient{0%,100%{box-shadow:0 10px 32px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.05),inset 0 1px 0 rgba(255,255,255,.13);}50%{box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.08),inset 0 1px 0 rgba(255,255,255,.18),0 0 22px var(--glow);}}
+    @keyframes revealUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+    @keyframes revealScale{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+
+    /* entrance stagger */
+    .swiper-slide-active .avatar-section{animation:revealScale .7s cubic-bezier(.22,1,.36,1) both;}
+    .swiper-slide-active .profile-name{animation:revealUp .6s cubic-bezier(.22,1,.36,1) .04s both,nameShift 9s ease-in-out .5s infinite;}
+    .swiper-slide-active .location{animation:revealUp .55s cubic-bezier(.22,1,.36,1) .1s both;}
+    .swiper-slide-active .presence-row:not([hidden]){animation:revealUp .55s cubic-bezier(.22,1,.36,1) .14s both;}
+    .swiper-slide-active .meta-stats:not(:empty){animation:revealUp .55s cubic-bezier(.22,1,.36,1) .18s both;}
+    .swiper-slide-active .slide-glass-shell{animation:panelAmbient 5.5s ease-in-out .75s infinite;}
+    .swiper-slide-active .dogtag-card.slide-glass-dogtag{animation:revealUp .65s cubic-bezier(.22,1,.36,1) .12s both,dogAmbient 4.8s ease-in-out .9s infinite;}
+    .swiper-slide-active .social-link:nth-child(1){animation:revealUp .5s cubic-bezier(.22,1,.36,1) .22s both;}
+    .swiper-slide-active .social-link:nth-child(2){animation:revealUp .5s cubic-bezier(.22,1,.36,1) .28s both;}
+    .swiper-slide-active .social-link:nth-child(3){animation:revealUp .5s cubic-bezier(.22,1,.36,1) .34s both;}
+    .swiper-slide:not(.swiper-slide-active) *{animation-play-state:paused !important;}
+
+    /* theme 2 */
+    .theme-2{--c1:#ff85a1;--c2:#a8d5a2;--accent:#ff85a1;--glow:rgba(255,133,161,.35);--card-border:rgba(255,133,161,.22);}
+    .theme-2 .avatar-img{border-color:#ff85a1;}
+    .theme-2 .dogtag-avatar{border-color:rgba(255,133,161,.6);}
+    .theme-2 .dogtag-name{color:#ff85a1;}
+    .theme-2 .dogtag-username{color:rgba(255,200,210,.55);}
+    .theme-2 .location{color:rgba(255,200,210,.65);}
+    .theme-2 .visitor-badge{background:linear-gradient(135deg,#ff85a1,#a8d5a2);color:#1a0a0e;}
+
+    @media(hover:none){.social-link::before{display:none;}}
+    @media(max-width:360px){.slide-glass-shell{padding:16px 12px 18px;gap:6px}.dogtag-card.slide-glass-dogtag{padding:12px 10px;margin-top:-10px}.social-links{gap:6px}}
+    @media(max-height:640px){.cap-container{max-height:calc(100vh - 20px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}.cap-container::-webkit-scrollbar{display:none}.dogtag-card.slide-glass-dogtag{margin-top:8px}}
+    @media(prefers-reduced-motion:reduce){.glass-border-travel__trail,.glass-border-travel__glowline,.glass-border-travel__stroke,.swiper-slide-active .avatar-section,.swiper-slide-active .profile-name,.swiper-slide-active .location,.swiper-slide-active .slide-glass-shell,.swiper-slide-active .dogtag-card,.swiper-slide-active .social-link{animation:none !important;}}
+    html[data-perf="low"] #cursorCanvas{display:none;}
+    html[data-perf="low"] .glass-border-travel__trail,html[data-perf="low"] .glass-border-travel__glowline,html[data-perf="low"] .glass-border-travel__stroke{animation:none !important;}
+    html[data-perf="low"] .slide-glass-shell,html[data-perf="low"] .dogtag-card{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}
+    </style>
 </head>
 <body>
 
-    <canvas id="cursorCanvas"></canvas>
+<canvas id="cursorCanvas"></canvas>
 
-    <div class="media-controls">
-        <button class="control-btn" id="volumeBtn" title="Volume">
-            <span class="icon">🔊</span>
-        </button>
-    </div>
-    <div class="volume-slider" id="volumeSlider">
-        <input type="range" id="volumeControl" min="0" max="100" value="50">
-    </div>
+<div class="media-controls">
+    <button class="control-btn" id="volumeBtn" title="Volume"><span class="icon">🔊</span></button>
+</div>
+<div class="volume-slider" id="volumeSlider">
+    <input type="range" id="volumeControl" min="0" max="100" value="50">
+</div>
 
-    <!-- Per-slide background music -->
-    <audio id="music1" loop src="media/music1.mp3"></audio>
-    <audio id="music2" loop src="media/music2.mp3"></audio>
+<audio id="music1" loop src="media/music1.mp3"></audio>
+<audio id="music2" loop src="media/music2.mp3"></audio>
 
-    <div class="swiper-container" data-nav-theme="1">
-        <div class="swiper-wrapper">
+<div class="swiper-container" data-nav-theme="1">
+    <div class="swiper-wrapper">
 
-            <!-- ══ Slide 1: Moonlit ══ -->
-            <div class="swiper-slide theme-1">
-                <video class="slide-video" muted loop playsinline preload="none">
-                    <source data-src="media/moon.mp4" type="video/mp4">
-                </video>
-                <div class="slide-overlay"></div>
-                <span class="theme-label">Moonlit</span>
-
-                <div class="cap-container">
-                    <div class="slide-glass-shell">
-
-                        <!-- Animated border -->
-                        <svg class="glass-border-travel glass-border-travel--shell" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                            <defs>
-                                <linearGradient id="bbg-s1-sh" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="var(--c1)"/>
-                                    <stop offset="42%" stop-color="#ffffff"/>
-                                    <stop offset="100%" stop-color="var(--c2)"/>
-                                </linearGradient>
-                            </defs>
-                            <rect class="glass-border-travel__trail glass-border-travel__trail--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none"/>
-                            <rect class="glass-border-travel__glowline glass-border-travel__glowline--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#bbg-s1-sh)"/>
-                            <rect class="glass-border-travel__stroke glass-border-travel__stroke--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#bbg-s1-sh)"/>
+        <!-- ══ SLIDE 1: Moonlit ══ -->
+        <div class="swiper-slide theme-1">
+            <video class="slide-video" muted loop playsinline preload="none">
+                <source data-src="media/moon.mp4" type="video/mp4">
+            </video>
+            <div class="slide-overlay"></div>
+            <span class="theme-label">Moonlit</span>
+            <div class="cap-container">
+                <div class="slide-glass-shell">
+                    <svg class="glass-border-travel glass-border-travel--shell" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                        <defs><linearGradient id="g1s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="var(--c1)"/><stop offset="42%" stop-color="#fff"/><stop offset="100%" stop-color="var(--c2)"/></linearGradient></defs>
+                        <rect class="glass-border-travel__trail glass-border-travel__trail--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none"/>
+                        <rect class="glass-border-travel__glowline glass-border-travel__glowline--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#g1s)"/>
+                        <rect class="glass-border-travel__stroke glass-border-travel__stroke--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#g1s)"/>
+                    </svg>
+                    <div class="avatar-section">
+                        <div class="avatar-decoration">
+                            <img src="https://cdn.discordapp.com/avatar-decoration-presets/a_ec5207e70ca2ef457c852d6135531d19.png" class="decoration-frame" alt="">
+                            <img id="discordAvatar" class="avatar-img" src="" alt="Avatar">
+                        </div>
+                        <h1 class="profile-name" id="discordName">Fairy</h1>
+                        <div class="location" id="location">🌙 Moon</div>
+                        <div class="presence-row" id="presenceRow" hidden>
+                            <img class="presence-art" id="presenceArt" alt="" width="36" height="36">
+                            <div class="presence-inner">
+                                <span class="presence-label" id="presenceLabel"></span>
+                                <span class="presence-text" id="presenceText"></span>
+                            </div>
+                        </div>
+                        <div class="meta-stats" id="metaStats"></div>
+                    </div>
+                    <div class="dogtag-card slide-glass-dogtag">
+                        <svg class="glass-border-travel glass-border-travel--dogtag" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                            <defs><linearGradient id="g1d" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="var(--c1)"/><stop offset="45%" stop-color="#fff"/><stop offset="100%" stop-color="var(--c2)"/></linearGradient></defs>
+                            <rect class="glass-border-travel__trail glass-border-travel__trail--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none"/>
+                            <rect class="glass-border-travel__stroke glass-border-travel__stroke--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none" stroke="url(#g1d)"/>
                         </svg>
-
-                        <div class="avatar-section">
-                            <div class="avatar-decoration">
-                                <img src="https://cdn.discordapp.com/avatar-decoration-presets/a_ec5207e70ca2ef457c852d6135531d19.png" class="decoration-frame" alt="">
-                                <img id="discordAvatar" class="avatar-img" src="" alt="Avatar">
-                            </div>
-                            <h1 class="profile-name" id="discordName">Fairy</h1>
-                            <div class="location" id="location">🌙 Moon</div>
-                            <div class="presence-row" id="presenceRow" hidden>
-                                <img class="presence-art" id="presenceArt" alt="" width="36" height="36">
-                                <div class="presence-inner">
-                                    <span class="presence-label" id="presenceLabel"></span>
-                                    <span class="presence-text" id="presenceText"></span>
-                                </div>
-                            </div>
-                            <div class="meta-stats d-flex flex-wrap justify-content-center align-items-center gap-2" id="metaStats"></div>
-                        </div>
-
-                        <div class="dogtag-card slide-glass-dogtag">
-                            <svg class="glass-border-travel glass-border-travel--dogtag" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                                <defs>
-                                    <linearGradient id="bbg-s1-dg" x1="100%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" stop-color="var(--c1)"/>
-                                        <stop offset="45%" stop-color="#ffffff"/>
-                                        <stop offset="100%" stop-color="var(--c2)"/>
-                                    </linearGradient>
-                                </defs>
-                                <rect class="glass-border-travel__trail glass-border-travel__trail--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none"/>
-                                <rect class="glass-border-travel__stroke glass-border-travel__stroke--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none" stroke="url(#bbg-s1-dg)"/>
-                            </svg>
-                            <div class="visitor-badge" id="visitorCount">0</div>
-                            <div class="dogtag-content">
-                                <div class="dogtag-avatar"><img id="dogtagAvatar" src="" alt=""></div>
-                                <div class="dogtag-info">
-                                    <div class="dogtag-name" id="dogtagName">Fairy<br><small>(Fae🦋)</small></div>
-                                    <div class="dogtag-username" id="dogtagUsername">@_.itz.fae_</div>
-                                    <div class="dogtag-status">
-                                        <span class="status-dot" id="statusDot">●</span>
-                                        <span class="status-text" id="statusText">Online</span>
-                                    </div>
+                        <div class="visitor-badge" id="visitorCount">0</div>
+                        <div class="dogtag-content">
+                            <div class="dogtag-avatar"><img id="dogtagAvatar" src="" alt=""></div>
+                            <div class="dogtag-info">
+                                <div class="dogtag-name" id="dogtagName">Fairy<br><small>(Fae🦋)</small></div>
+                                <div class="dogtag-username" id="dogtagUsername">@_.itz.fae_</div>
+                                <div class="dogtag-status">
+                                    <span class="status-dot" id="statusDot">●</span>
+                                    <span class="status-text" id="statusText">Online</span>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/_.itz.fae_/" class="social-link" data-name="Instagram" target="_blank"><i class="fab fa-instagram"></i></a>
+                        <a href="https://mu.linkedin.com/in/zariyat-maudarbux/" class="social-link" data-name="LinkedIn" target="_blank"><i class="fab fa-linkedin"></i></a>
+                        <a href="https://github.com/Zari-16/" class="social-link" data-name="GitHub" target="_blank"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div><!-- end slide 1 -->
 
-                        <div class="social-links">
-                            <a href="https://www.instagram.com/_.itz.fae_/" class="social-link" data-name="Instagram" target="_blank"><i class="fab fa-instagram"></i></a>
-                            <a href="https://mu.linkedin.com/in/zariyat-maudarbux/" class="social-link" data-name="LinkedIn" target="_blank"><i class="fab fa-linkedin"></i></a>
-                            <a href="https://github.com/Zari-16/" class="social-link" data-name="GitHub" target="_blank"><i class="fab fa-github"></i></a>
+        <!-- ══ SLIDE 2: Garden ══ -->
+        <div class="swiper-slide theme-2">
+            <video class="slide-video" muted loop playsinline preload="none">
+                <source data-src="media/floral.mp4" type="video/mp4">
+            </video>
+            <div class="slide-overlay"></div>
+            <span class="theme-label">Garden</span>
+            <div class="cap-container">
+                <div class="slide-glass-shell">
+                    <svg class="glass-border-travel glass-border-travel--shell" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                        <defs><linearGradient id="g2s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="var(--c1)"/><stop offset="42%" stop-color="#fff"/><stop offset="100%" stop-color="var(--c2)"/></linearGradient></defs>
+                        <rect class="glass-border-travel__trail glass-border-travel__trail--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none"/>
+                        <rect class="glass-border-travel__glowline glass-border-travel__glowline--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#g2s)"/>
+                        <rect class="glass-border-travel__stroke glass-border-travel__stroke--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#g2s)"/>
+                    </svg>
+                    <div class="avatar-section">
+                        <div class="avatar-decoration">
+                            <img src="https://cdn.discordapp.com/avatar-decoration-presets/a_ec5207e70ca2ef457c852d6135531d19.png" class="decoration-frame" alt="">
+                            <img id="discordAvatar2" class="avatar-img" src="" alt="Avatar">
                         </div>
-
-                    </div><!-- end .slide-glass-shell -->
-                </div><!-- end .cap-container -->
-            </div><!-- end slide 1 -->
-
-
-            <!-- ══ Slide 2: Garden ══ -->
-            <div class="swiper-slide theme-2">
-                <video class="slide-video" muted loop playsinline preload="none">
-                    <source data-src="media/floral.mp4" type="video/mp4">
-                </video>
-                <div class="slide-overlay"></div>
-                <span class="theme-label">Garden</span>
-
-                <div class="cap-container">
-                    <div class="slide-glass-shell">
-
-                        <!-- Animated border -->
-                        <svg class="glass-border-travel glass-border-travel--shell" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                            <defs>
-                                <linearGradient id="bbg-s2-sh" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="var(--c1)"/>
-                                    <stop offset="42%" stop-color="#ffffff"/>
-                                    <stop offset="100%" stop-color="var(--c2)"/>
-                                </linearGradient>
-                            </defs>
-                            <rect class="glass-border-travel__trail glass-border-travel__trail--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none"/>
-                            <rect class="glass-border-travel__glowline glass-border-travel__glowline--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#bbg-s2-sh)"/>
-                            <rect class="glass-border-travel__stroke glass-border-travel__stroke--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#bbg-s2-sh)"/>
+                        <h1 class="profile-name" id="discordName2">Fairy</h1>
+                        <div class="location" id="location2">🌸 Garden</div>
+                        <div class="presence-row" id="presenceRow2" hidden>
+                            <img class="presence-art" id="presenceArt2" alt="" width="36" height="36">
+                            <div class="presence-inner">
+                                <span class="presence-label" id="presenceLabel2"></span>
+                                <span class="presence-text" id="presenceText2"></span>
+                            </div>
+                        </div>
+                        <div class="meta-stats" id="metaStats2"></div>
+                    </div>
+                    <div class="dogtag-card slide-glass-dogtag">
+                        <svg class="glass-border-travel glass-border-travel--dogtag" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                            <defs><linearGradient id="g2d" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="var(--c1)"/><stop offset="45%" stop-color="#fff"/><stop offset="100%" stop-color="var(--c2)"/></linearGradient></defs>
+                            <rect class="glass-border-travel__trail glass-border-travel__trail--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none"/>
+                            <rect class="glass-border-travel__stroke glass-border-travel__stroke--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none" stroke="url(#g2d)"/>
                         </svg>
-
-                        <div class="avatar-section">
-                            <div class="avatar-decoration">
-                                <img src="https://cdn.discordapp.com/avatar-decoration-presets/a_ec5207e70ca2ef457c852d6135531d19.png" class="decoration-frame" alt="">
-                                <img id="discordAvatar2" class="avatar-img" src="" alt="Avatar">
-                            </div>
-                            <h1 class="profile-name" id="discordName2">Fairy</h1>
-                            <div class="location" id="location2">🌸 Garden</div>
-                            <div class="presence-row" id="presenceRow2" hidden>
-                                <img class="presence-art" id="presenceArt2" alt="" width="36" height="36">
-                                <div class="presence-inner">
-                                    <span class="presence-label" id="presenceLabel2"></span>
-                                    <span class="presence-text" id="presenceText2"></span>
-                                </div>
-                            </div>
-                            <div class="meta-stats d-flex flex-wrap justify-content-center align-items-center gap-2" id="metaStats2"></div>
-                        </div>
-
-                        <div class="dogtag-card slide-glass-dogtag">
-                            <svg class="glass-border-travel glass-border-travel--dogtag" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                                <defs>
-                                    <linearGradient id="bbg-s2-dg" x1="100%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" stop-color="var(--c1)"/>
-                                        <stop offset="45%" stop-color="#ffffff"/>
-                                        <stop offset="100%" stop-color="var(--c2)"/>
-                                    </linearGradient>
-                                </defs>
-                                <rect class="glass-border-travel__trail glass-border-travel__trail--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none"/>
-                                <rect class="glass-border-travel__stroke glass-border-travel__stroke--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none" stroke="url(#bbg-s2-dg)"/>
-                            </svg>
-                            <div class="visitor-badge" id="visitorCount2">0</div>
-                            <div class="dogtag-content">
-                                <div class="dogtag-avatar"><img id="dogtagAvatar2" src="" alt=""></div>
-                                <div class="dogtag-info">
-                                    <div class="dogtag-name" id="dogtagName2">Fairy<br><small>(Fae🦋)</small></div>
-                                    <div class="dogtag-username" id="dogtagUsername2">@_.itz.fae_</div>
-                                    <div class="dogtag-status">
-                                        <span class="status-dot" id="statusDot2">●</span>
-                                        <span class="status-text" id="statusText2">Online</span>
-                                    </div>
+                        <div class="visitor-badge" id="visitorCount2">0</div>
+                        <div class="dogtag-content">
+                            <div class="dogtag-avatar"><img id="dogtagAvatar2" src="" alt=""></div>
+                            <div class="dogtag-info">
+                                <div class="dogtag-name" id="dogtagName2">Fairy<br><small>(Fae🦋)</small></div>
+                                <div class="dogtag-username" id="dogtagUsername2">@_.itz.fae_</div>
+                                <div class="dogtag-status">
+                                    <span class="status-dot" id="statusDot2">●</span>
+                                    <span class="status-text" id="statusText2">Online</span>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/_.itz.fae_/" class="social-link" data-name="Instagram" target="_blank"><i class="fab fa-instagram"></i></a>
+                        <a href="https://mu.linkedin.com/in/zariyat-maudarbux/" class="social-link" data-name="LinkedIn" target="_blank"><i class="fab fa-linkedin"></i></a>
+                        <a href="https://github.com/Zari-16/" class="social-link" data-name="GitHub" target="_blank"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div><!-- end slide 2 -->
 
-                        <div class="social-links">
-                            <a href="https://www.instagram.com/_.itz.fae_/" class="social-link" data-name="Instagram" target="_blank"><i class="fab fa-instagram"></i></a>
-                            <a href="https://mu.linkedin.com/in/zariyat-maudarbux/" class="social-link" data-name="LinkedIn" target="_blank"><i class="fab fa-linkedin"></i></a>
-                            <a href="https://github.com/Zari-16/" class="social-link" data-name="GitHub" target="_blank"><i class="fab fa-github"></i></a>
-                        </div>
+    </div><!-- end wrapper -->
+    <div class="swiper-pagination"></div>
+    <div class="swiper-button-next"></div>
+    <div class="swiper-button-prev"></div>
+</div><!-- end swiper -->
 
-                    </div><!-- end .slide-glass-shell -->
-                </div><!-- end .cap-container -->
-            </div><!-- end slide 2 -->
-
-        </div><!-- end .swiper-wrapper -->
-
-        <div class="swiper-pagination"></div>
-        <div class="swiper-button-next"></div>
-        <div class="swiper-button-prev"></div>
-    </div><!-- end .swiper-container -->
-
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
-    <script src="script.js"></script>
+<script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
