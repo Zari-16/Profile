@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Fae — Profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+</head>
+<body>
+
+    <canvas id="cursorCanvas"></canvas>
+
+    <div class="media-controls">
+        <button class="control-btn" id="volumeBtn" title="Volume">
+            <span class="icon">🔊</span>
+        </button>
+    </div>
+    <div class="volume-slider" id="volumeSlider">
+        <input type="range" id="volumeControl" min="0" max="100" value="50">
+    </div>
+
+    <!-- Per-slide background music -->
+    <audio id="music1" loop src="media/music1.mp3"></audio>
+    <audio id="music2" loop src="media/music2.mp3"></audio>
+    <audio id="music3" loop src="media/music3.mp3"></audio>
+
+    <div class="swiper-container" data-nav-theme="1">
+        <div class="swiper-wrapper">
+
+            <!-- ── Slide 1: Cyberpunk ── -->
+            <div class="swiper-slide theme-1">
+                <video class="slide-video" muted loop playsinline preload="none">
+                    <source data-src="media/samurai.mp4" type="video/mp4">
+                </video>
+                <div class="slide-overlay"></div>
+                <span class="theme-label">Cyberpunk</span>
+                <div class="cap-container">
+                    <div class="slide-glass-shell">
+                        <svg class="glass-border-travel glass-border-travel--shell" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="bbg-s1-sh" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="var(--c1)"/>
+                                    <stop offset="42%" stop-color="#ffffff"/>
+                                    <stop offset="100%" stop-color="var(--c2)"/>
+                                </linearGradient>
+                            </defs>
+                            <rect class="glass-border-travel__trail glass-border-travel__trail--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none"/>
+                            <rect class="glass-border-travel__glowline glass-border-travel__glowline--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#bbg-s1-sh)"/>
+                            <rect class="glass-border-travel__stroke glass-border-travel__stroke--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#bbg-s1-sh)"/>
+                        </svg>
+                        <div class="avatar-section">
+                            <div class="avatar-decoration">
+                                <img src="https://cdn.discordapp.com/avatar-decoration-presets/a_ec5207e70ca2ef457c852d6135531d19.png" class="decoration-frame" alt="">
+                                <img id="discordAvatar" class="avatar-img" src="" alt="Avatar">
+                            </div>
+                            <h1 class="profile-name" id="discordName">Fairy</h1>
+                            <div class="location" id="location">📍 Earth</div>
+                            <div class="presence-row" id="presenceRow" hidden>
+                                <img class="presence-art" id="presenceArt" alt="" width="36" height="36">
+                                <div class="presence-inner">
+                                    <span class="presence-label" id="presenceLabel"></span>
+                                    <span class="presence-text" id="presenceText"></span>
+                                </div>
+                            </div>
+                            <div class="meta-stats d-flex flex-wrap justify-content-center align-items-center gap-2" id="metaStats"></div>
+                        </div>
+                        <div class="dogtag-card slide-glass-dogtag">
+                            <svg class="glass-border-travel glass-border-travel--dogtag" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                                <defs>
+                                    <linearGradient id="bbg-s1-dg" x1="100%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="var(--c1)"/>
+                                        <stop offset="45%" stop-color="#ffffff"/>
+                                        <stop offset="100%" stop-color="var(--c2)"/>
+                                    </linearGradient>
+                                </defs>
+                                <rect class="glass-border-travel__trail glass-border-travel__trail--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none"/>
+                                <rect class="glass-border-travel__stroke glass-border-travel__stroke--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none" stroke="url(#bbg-s1-dg)"/>
+                            </svg>
+                            <div class="visitor-badge" id="visitorCount">0</div>
+                            <div class="dogtag-content">
+                                <div class="dogtag-avatar"><img id="dogtagAvatar" src="" alt=""></div>
+                                <div class="dogtag-info">
+                                    <div class="dogtag-name" id="dogtagName">Fairy<br><small>(Fae🦋)</small></div>
+                                    <div class="dogtag-username" id="dogtagUsername">@_.itz.fae_</div>
+                                    <div class="dogtag-status">
+                                        <span class="status-dot" id="statusDot">●</span>
+                                        <span class="status-text" id="statusText">Online</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="social-links">
+                            <a href="https://www.instagram.com/_.itz.fae_/" class="social-link" data-name="Instagram" target="_blank"><i class="fab fa-instagram"></i></a>
+                            <a href="https://mu.linkedin.com/in/zariyat-maudarbux/" class="social-link" data-name="LinkedIn" target="_blank"><i class="fab fa-linkedin"></i></a>
+                            <a href="https://github.com/Zari-16/" class="social-link" data-name="GitHub" target="_blank"><i class="fab fa-github"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ── Slide 2: Forest ── -->
+            <div class="swiper-slide theme-3">
+                <video class="slide-video" muted loop playsinline preload="none">
+                    <!-- Replace with your forest video -->
+                    <source data-src="media/green.mp4" type="video/mp4">
+                </video>
+                <div class="slide-overlay"></div>
+                <span class="theme-label">Forest</span>
+                <div class="cap-container">
+                    <div class="slide-glass-shell">
+                        <svg class="glass-border-travel glass-border-travel--shell" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="bbg-s3-sh" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="var(--c1)"/>
+                                    <stop offset="42%" stop-color="#ffffff"/>
+                                    <stop offset="100%" stop-color="var(--c2)"/>
+                                </linearGradient>
+                            </defs>
+                            <rect class="glass-border-travel__trail glass-border-travel__trail--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none"/>
+                            <rect class="glass-border-travel__glowline glass-border-travel__glowline--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#bbg-s3-sh)"/>
+                            <rect class="glass-border-travel__stroke glass-border-travel__stroke--shell" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="11" ry="11" fill="none" stroke="url(#bbg-s3-sh)"/>
+                        </svg>
+                        <div class="avatar-section">
+                            <div class="avatar-decoration">
+                                <img src="https://cdn.discordapp.com/avatar-decoration-presets/a_ec5207e70ca2ef457c852d6135531d19.png" class="decoration-frame" alt="">
+                                <img id="discordAvatar3" class="avatar-img" src="" alt="Avatar">
+                            </div>
+                            <h1 class="profile-name" id="discordName3">Deepesh</h1>
+                            <div class="location" id="location3">📍 Mars</div>
+                            <div class="presence-row" id="presenceRow3" hidden>
+                                <img class="presence-art" id="presenceArt3" alt="" width="36" height="36">
+                                <div class="presence-inner">
+                                    <span class="presence-label" id="presenceLabel3"></span>
+                                    <span class="presence-text" id="presenceText3"></span>
+                                </div>
+                            </div>
+                            <div class="meta-stats d-flex flex-wrap justify-content-center align-items-center gap-2" id="metaStats3"></div>
+                        </div>
+                        <div class="dogtag-card slide-glass-dogtag">
+                            <svg class="glass-border-travel glass-border-travel--dogtag" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                                <defs>
+                                    <linearGradient id="bbg-s3-dg" x1="100%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="var(--c1)"/>
+                                        <stop offset="45%" stop-color="#ffffff"/>
+                                        <stop offset="100%" stop-color="var(--c2)"/>
+                                    </linearGradient>
+                                </defs>
+                                <rect class="glass-border-travel__trail glass-border-travel__trail--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none"/>
+                                <rect class="glass-border-travel__stroke glass-border-travel__stroke--dogtag" pathLength="100" x="1.25" y="1.25" width="97.5" height="97.5" rx="9" ry="9" fill="none" stroke="url(#bbg-s3-dg)"/>
+                            </svg>
+                            <div class="visitor-badge" id="visitorCount3">0</div>
+                            <div class="dogtag-content">
+                                <div class="dogtag-avatar"><img id="dogtagAvatar3" src="" alt=""></div>
+                                <div class="dogtag-info">
+                                    <div class="dogtag-name" id="dogtagName3">Fairy<br><small>(fae🦋)</small></div>
+                                    <div class="dogtag-username" id="dogtagUsername3">@_.itz.fae_</div>
+                                    <div class="dogtag-status">
+                                        <span class="status-dot" id="statusDot3">●</span>
+                                        <span class="status-text" id="statusText3">Online</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="social-links">
+                            <a href="https://www.instagram.com/_.itz.fae_/" class="social-link" data-name="Instagram" target="_blank"><i class="fab fa-instagram"></i></a>
+                            <a href="https://mu.linkedin.com/in/zariyat-maudarbux/" class="social-link" data-name="LinkedIn" target="_blank"><i class="fab fa-linkedin"></i></a>
+                            <a href="https://github.com/Zari-16/" class="social-link" data-name="GitHub" target="_blank"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="swiper-pagination"></div>
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
+    </div>
+
+    
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
